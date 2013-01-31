@@ -1,0 +1,23 @@
+@import url(http://fonts.googleapis.com/css?family=Libre+Baskerville:400,700,400italic);
+
+body {
+    font-family: 'Libre Baskerville', serif;
+    line-height: 1.4;
+    color: #222;
+    background: #e5e8e8;
+    font-size: 14pt;
+}
+
+.container {
+    width: 700px;
+    margin-left: 10%;
+    margin-top: 100px;
+}
+
+.title {
+    font-size: 36pt;
+    font-weight: bold;
+    padding-bottom: 20px;
+    margin-bottom: 30px;
+    border-bottom: 1px solid #888;
+}
