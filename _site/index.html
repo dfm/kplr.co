@@ -14,13 +14,43 @@
     <div class="container">
 
         <div class="title">kplr.co</div>
+        <div class="subtitle">Crowdsourced Kepler API documentation</div>
 
         <div class="content">
 
-            <p>The Kepler MAST API documentation <em>sucks</em>. Let&#8217;s fix that here.</p>
+            <p>The Kepler MAST API documentation <em>sucks</em>. Let&#8217;s fix that here. Here&#8217;s the most useful <a href='http://archive.stsci.edu/vo/mast_services.html'>link</a>.</p>
+
+<h2 id='getting_started'>Getting started</h2>
+
+<p>The root URL for the Kepler MAST API is:</p>
+<div class='highlight'><pre><code class='bash'>http://archive.stsci.edu/kepler/<span class='o'>{</span>0<span class='o'>}</span>/search.php
+</code></pre>
+</div>
+<p>where <code>{0}</code> is chosen from one of the table names. For example, to get a list of all the KOIs, you would do something like:</p>
+<div class='highlight'><pre><code class='bash'>http://archive.stsci.edu/kepler/koi/search.php?action<span class='o'>=</span>Search&amp;outputformat<span class='o'>=</span>JSON
+</code></pre>
+</div>
+<p>To filter by a specific Kepler ID, you would append <a href='
+http://archive.stsci.edu/kepler/koi/search.php?action=Search&amp;outputformat=JSON
+&amp;kepid=8559644'><code>&amp;kepid=8559644</code></a> to the above URL.</p>
 
         </div>
 
+        <div id="footer">
+            Copyright 2013 Dan Foreman-Mackey &amp; contributors.<br>
+            Licensed under <a
+                href="http://creativecommons.org/licenses/by/3.0/deed.en_US">
+                Creative Commons</a>.
+        </div>
+
+    </div>
+
+    <div id="gh-badge">
+        <a href="https://github.com/dfm/kplr">
+            <img style="position: absolute; top: 0; right: 0; border: 0;"
+                 src="https://s3.amazonaws.com/github/ribbons/forkme_right_red_aa0000.png"
+                 alt="Fork me on GitHub">
+        </a>
     </div>
 
 </body>
