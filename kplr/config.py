@@ -6,4 +6,3 @@ from __future__ import (division, print_function, absolute_import,
 
 __all__ = []
 
-POSTGRES_URI = "postgresql+psycopg2:///kplr"

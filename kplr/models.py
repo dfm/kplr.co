@@ -54,23 +54,23 @@ class KIC(Base):
 
 class Reference(Base):
 
-    __tablename__ = "references"
+    __tablename__ = "literature"
 
     id = Column(Integer, primary_key=True)
     name = Column(String, unique=True)
     url = Column(String)
     arxiv_id = Column(String, unique=True)
-    reference = Column(String)
+    ref = Column(String)
 
-    def __init__(self, name, url=None, arxiv_id=None, reference=None):
+    def __init__(self, name, url=None, arxiv_id=None, ref=None):
         self.name = name
         self.url = url
         self.arxiv_id = arxiv_id
-        self.reference = reference
+        self.ref = ref
 
     def __repr__(self):
         return ("<Reference('{0.name}', url='{0.url}', "
-                "arxiv_id='{0.arxiv_id}', reference='{0.reference}')>"
+                "arxiv_id='{0.arxiv_id}', ref='{0.ref}')>"
                ).format(self)
 
 
@@ -98,8 +98,8 @@ class Measurement(Base):
 
     obj_id = Column(Integer, ForeignKey("kic.id"))
     obj = relationship("KIC", backref=backref("measurements"))
-    reference_id = Column(Integer, ForeignKey("references.id"))
-    reference = relationship("Reference", backref=backref("measurements"))
+    ref_id = Column(Integer, ForeignKey("literature.id"))
+    ref = relationship("Reference", backref=backref("measurements"))
     measurement_type_id = Column(Integer, ForeignKey("measurement_types.id"))
     measurement_type = relationship("MeasurementType")
     unit = Column(String)
@@ -109,10 +109,10 @@ class Measurement(Base):
     uncert_plus = Column(Float)
     uncert_minus = Column(Float)
 
-    def __init__(self, obj, reference, measurement_type, unit, value,
+    def __init__(self, obj, ref, measurement_type, unit, value,
                  uncertainty=None):
         self.obj = obj
-        self.reference = reference
+        self.reference = ref
         measurement_type = measurement_type
         self.value = value
 
