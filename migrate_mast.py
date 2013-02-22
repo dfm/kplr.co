@@ -7,6 +7,7 @@ from __future__ import (division, print_function, absolute_import,
 
 import kplr
 import requests
+from astropy.coordinates import ICRSCoordinates
 
 
 base_url = "http://archive.stsci.edu/kepler/{0}/search.php"
@@ -36,52 +37,105 @@ def mast_request(category, **params):
         return None
 
 
+_mt = kplr.models.MeasurementType
+kic_mts = [
+            _mt("pm_ra", "Proper motion in R.A."),
+            _mt("pm_dec", "Proper motion in Dec."),
+            _mt("umag", "SDSS u-band magnitude"),
+            _mt("gmag", "SDSS g-band magnitude"),
+            _mt("rmag", "SDSS r-band magnitude"),
+            _mt("imag", "SDSS i-band magnitude"),
+            _mt("zmag", "SDSS z-band magnitude"),
+            _mt("gredmag", "Gred-band magnitude"),
+            _mt("d51mag", "D51-band magnitude"),
+            _mt("jmag", "2MASS J-band magnitude"),
+            _mt("hmag", "2MASS H-band magnitude"),
+            _mt("kmag", "2MASS K-band magnitude"),
+            _mt("kepmag", "Kepler magnitude"),
+            _mt("teff", "Effective temperature"),
+            _mt("logg", "Log10 surface gravity (in cm/s/s)"),
+            _mt("feh", "Log10 Fe/H metallicity"),
+            _mt("ebv", "Excess B-V reddening"),
+            _mt("av", "A-V extinction"),
+            _mt("stellar_radius", "Stellar radius"),
+            _mt("parallax", "Parallax"),
+          ]
+
+
 def kic():
     r = mast_request("kic10", max_records=1)
+    assert len(r) > 0
+    r = r[0]
 
+    # Database connection.
     session = kplr.Session()
+
+    # Build the KIC object.
+    ra = "{0}h{1}m{2}s".format(*(r["RA (J2000)"].split()))
+    dec = "{0}d{1}m{2}s".format(*(r["Dec (J2000)"].split()))
+    pos = ICRSCoordinates(" ".join([ra, dec]))
+    kic_obj = kplr.models.KIC(int(r["Kepler ID"]),
+                              pos.ra.degrees, pos.dec.degrees,
+                              int(r.get("2MASS Designation", -1)),
+                              r.get("2MASS ID", None),
+                              int(r.get("Alt ID", -1)),
+                              int(r.get("Alt ID Source", -1)),
+                              bool(r["Star/Gal ID"]), bool(r["kic_variable"]))
 
     # Get the MAST reference.
     rt = kplr.models.Reference
     ref = session.query(rt).filter(rt.name == "MAST").all()
-    if len(ref) == 0:
-        ref = rt("MAST")
-    else:
-        ref = ref[0]
+    ref = rt("MAST") if len(ref) == 0 else ref[0]
 
     # Parse the measurements.
-    measurements = []
-    mt = kplr.models.MeasurementType
-    for n, u, k in [
-                    ("umag", "mag", "u Mag"),
-                    ("gmag", "mag", "g Mag"),
-                    ("rmag", "mag", "r Mag"),
-                    ("imag", "mag", "i Mag"),
-                    ("zmag", "mag", "z Mag"),
-                   ]:
+    for n, u, k, e in [
+                        ("pm_ra", "arcsec/yr", "RA PM (arcsec/yr)", None),
+                        ("pm_dec", "arcsec/yr", "Dec PM (arcsec/yr)", None),
+                        ("umag", "mag", "u Mag", None),
+                        ("gmag", "mag", "g Mag", None),
+                        ("rmag", "mag", "r Mag", None),
+                        ("imag", "mag", "i Mag", None),
+                        ("zmag", "mag", "z Mag", None),
+                        ("gredmag", "mag", "Gred Mag", None),
+                        ("d51mag", "mag", "D51 Mag", None),
+                        ("jmag", "mag", "J Mag", None),
+                        ("hmag", "mag", "H Mag", None),
+                        ("kmag", "mag", "K Mag", None),
+                        ("teff", "K", "Teff (deg K)", 200),
+                        ("logg", None, "Log G (cm/s/s)", 0.5),
+                        ("feh", None, "Metallicity (solar=0.0)", 0.5),
+                        ("ebv", "mag", "E(B-V)", 0.1),
+                        ("av", "mag", "A_V", None),
+                        ("stellar_radius", "R_sun", "Radius (solar=1.0)",
+                                                                        None),
+                        ("parallax", "arcsec", "Parallax (arcsec)", None),
+                      ]:
 
         # Upsert the measurement type reference.
-        res = session.query(mt).filter(mt.name == n).all()
-        if len(res) == 0:
-            t = mt(n)
-        else:
-            t = res[0]
+        t = session.query(kplr.models.MeasurementType).filter(
+                            kplr.models.MeasurementType.name == n).all()[0]
 
         # Save the measurement.
         try:
-            measurements.append(
-                        kplr.models.Measurement(ref, t, u, float(r[0][k]))
+            kic_obj.measurements.append(
+                        kplr.models.Measurement(ref, t, u, float(r[k]),
+                                                uncertainty=e)
                     )
         except ValueError:
             pass
 
-    print(measurements)
+    print(kic_obj)
 
-    session.add_all(measurements)
+    session.add(kic_obj)
     session.commit()
 
 
 if __name__ == "__main__":
-    # kplr.drop_all()
-    # kplr.create_all()
+    kplr.drop_all()
+    kplr.create_all()
+
+    session = kplr.Session()
+    session.add_all(kic_mts)
+    session.commit()
+
     kic()

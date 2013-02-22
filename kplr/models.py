@@ -80,12 +80,14 @@ class MeasurementType(Base):
 
     id = Column(Integer, primary_key=True)
     name = Column(String, unique=True)
+    description = Column(String)
 
-    def __init__(self, name, base_unit=None):
+    def __init__(self, name, description):
         self.name = name
+        self.description = description
 
     def __repr__(self):
-        return "<MeasurementType('{0.name}')>".format(self)
+        return "<MeasurementType('{0.name}', '{0.description}')>".format(self)
 
 
 class Measurement(Base):
