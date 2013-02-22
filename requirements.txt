@@ -1,3 +1,4 @@
 SQLAlchemy==0.7.10
 psycopg2==2.4.6
 astropy==0.2
+requests==1.1.0

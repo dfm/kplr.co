@@ -4,16 +4,19 @@
 from __future__ import (division, print_function, absolute_import,
                         unicode_literals)
 
-__all__ = ["session"]
+__all__ = ["Session"]
 
+
+import os
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 
-POSTGRES_URI = "postgresql+psycopg2:///kplr"
-engine = create_engine(POSTGRES_URI)
-session = sessionmaker(bind=engine)
+DB_URI = os.environ.get("KPLR_DB_URI", "postgresql+psycopg2:///kplr")
+engine = create_engine(DB_URI)
+Session = sessionmaker(bind=engine)
+
 
 from . import models
 

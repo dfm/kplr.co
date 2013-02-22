@@ -80,14 +80,12 @@ class MeasurementType(Base):
 
     id = Column(Integer, primary_key=True)
     name = Column(String, unique=True)
-    base_unit = Column(String)
 
-    def __init__(self, name, base_unit):
+    def __init__(self, name, base_unit=None):
         self.name = name
-        self.base_unit = base_unit
 
     def __repr__(self):
-        return "<MeasurementType('{0.name}', '{0.base_unit}')>".format(self)
+        return "<MeasurementType('{0.name}')>".format(self)
 
 
 class Measurement(Base):
@@ -98,10 +96,13 @@ class Measurement(Base):
 
     obj_id = Column(Integer, ForeignKey("kic.id"))
     obj = relationship("KIC", backref=backref("measurements"))
+
     ref_id = Column(Integer, ForeignKey("literature.id"))
     ref = relationship("Reference", backref=backref("measurements"))
+
     measurement_type_id = Column(Integer, ForeignKey("measurement_types.id"))
     measurement_type = relationship("MeasurementType")
+
     unit = Column(String)
 
     # The value and error bars.
@@ -109,20 +110,20 @@ class Measurement(Base):
     uncert_plus = Column(Float)
     uncert_minus = Column(Float)
 
-    def __init__(self, obj, ref, measurement_type, unit, value,
-                 uncertainty=None):
-        self.obj = obj
-        self.reference = ref
-        measurement_type = measurement_type
+    def __init__(self, ref, measurement_type, unit, value, uncertainty=None):
+        self.ref = ref
+        self.measurement_type = measurement_type
+        self.unit = unit
         self.value = value
 
         try:
             self.uncert_plus = uncertainty[0]
             self.uncert_minus = uncertainty[1]
-        except (ValueError, IndexError):
+        except (TypeError, ValueError, IndexError):
             self.uncert_plus = self.uncert_minus = uncertainty
 
     def __repr__(self):
-        return ("<Measurement({0.obj}, {0.reference}, {0.value}, "
+        return ("<Measurement({0.ref}, {0.measurement_type}, {0.unit}, "
+                "{0.value}, "
                 "uncertainty=[{0.uncert_plus}, {0.uncert_minus}])>"
                ).format(self)
