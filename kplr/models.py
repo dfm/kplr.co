@@ -4,7 +4,7 @@
 from __future__ import (division, print_function, absolute_import,
                         unicode_literals)
 
-__all__ = []
+__all__ = ["KIC"]
 
 
 from sqlalchemy.ext.declarative import declarative_base
@@ -40,11 +40,11 @@ class KIC(Base):
 
     def __init__(self, kepler_id, ra, dec, twomass_id, twomass_name,
                  alt_id, alt_ref, galaxy, variable):
-        kepler_id = kepler_id
-        ra, dec = ra, dec
-        twomass_id, twomass_name = twomass_id, twomass_name
-        alt_id, alt_ref = alt_id, alt_ref
-        galaxy, variable = galaxy, variable
+        self.kepler_id = kepler_id
+        self.ra, self.dec = ra, dec
+        self.twomass_id, self.twomass_name = twomass_id, twomass_name
+        self.alt_id, self.alt_ref = alt_id, alt_ref
+        self.galaxy, self.variable = galaxy, variable
 
     def __repr__(self):
         return ("<KIC({0.kepler_id}, {0.ra}, {0.dec}, {0.twomass_id}, "
@@ -52,47 +52,9 @@ class KIC(Base):
                 "{0.galaxy}, {0.variable})>").format(self)
 
 
-class Reference(Base):
+class KICMeasurement(Base):
 
-    __tablename__ = "literature"
-
-    id = Column(Integer, primary_key=True)
-    name = Column(String, unique=True)
-    url = Column(String)
-    arxiv_id = Column(String, unique=True)
-    ref = Column(String)
-
-    def __init__(self, name, url=None, arxiv_id=None, ref=None):
-        self.name = name
-        self.url = url
-        self.arxiv_id = arxiv_id
-        self.ref = ref
-
-    def __repr__(self):
-        return ("<Reference('{0.name}', url='{0.url}', "
-                "arxiv_id='{0.arxiv_id}', ref='{0.ref}')>"
-               ).format(self)
-
-
-class MeasurementType(Base):
-
-    __tablename__ = "measurement_types"
-
-    id = Column(Integer, primary_key=True)
-    name = Column(String, unique=True)
-    description = Column(String)
-
-    def __init__(self, name, description):
-        self.name = name
-        self.description = description
-
-    def __repr__(self):
-        return "<MeasurementType('{0.name}', '{0.description}')>".format(self)
-
-
-class Measurement(Base):
-
-    __tablename__ = "measurements"
+    __tablename__ = "kic_measurements"
 
     id = Column(Integer, primary_key=True)
 
@@ -128,4 +90,42 @@ class Measurement(Base):
         return ("<Measurement({0.ref}, {0.measurement_type}, {0.unit}, "
                 "{0.value}, "
                 "uncertainty=[{0.uncert_plus}, {0.uncert_minus}])>"
+               ).format(self)
+
+
+class MeasurementType(Base):
+
+    __tablename__ = "measurement_types"
+
+    id = Column(Integer, primary_key=True)
+    name = Column(String, unique=True)
+    description = Column(String)
+
+    def __init__(self, name, description):
+        self.name = name
+        self.description = description
+
+    def __repr__(self):
+        return "<MeasurementType('{0.name}', '{0.description}')>".format(self)
+
+
+class Reference(Base):
+
+    __tablename__ = "literature"
+
+    id = Column(Integer, primary_key=True)
+    name = Column(String, unique=True)
+    url = Column(String)
+    arxiv_id = Column(String, unique=True)
+    ref = Column(String)
+
+    def __init__(self, name, url=None, arxiv_id=None, ref=None):
+        self.name = name
+        self.url = url
+        self.arxiv_id = arxiv_id
+        self.ref = ref
+
+    def __repr__(self):
+        return ("<Reference('{0.name}', url='{0.url}', "
+                "arxiv_id='{0.arxiv_id}', ref='{0.ref}')>"
                ).format(self)

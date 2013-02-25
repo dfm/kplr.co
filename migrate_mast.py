@@ -62,6 +62,11 @@ kic_mts = [
           ]
 
 
+def _get(r, k, d):
+    v = r.get(k, d)
+    return v if r.get(k, "") != "" else d
+
+
 def kic():
     r = mast_request("kic10", max_records=1)
     assert len(r) > 0
@@ -73,14 +78,14 @@ def kic():
     # Build the KIC object.
     ra = "{0}h{1}m{2}s".format(*(r["RA (J2000)"].split()))
     dec = "{0}d{1}m{2}s".format(*(r["Dec (J2000)"].split()))
-    pos = ICRSCoordinates(" ".join([ra, dec]))
+    pos = ICRSCoordinates((" ".join([ra, dec])).encode("utf-8"))
     kic_obj = kplr.models.KIC(int(r["Kepler ID"]),
                               pos.ra.degrees, pos.dec.degrees,
-                              int(r.get("2MASS Designation", -1)),
+                              int(_get(r, "2MASS Designation", -1)),
                               r.get("2MASS ID", None),
-                              int(r.get("Alt ID", -1)),
-                              int(r.get("Alt ID Source", -1)),
-                              bool(r["Star/Gal ID"]), bool(r["kic_variable"]))
+                              int(_get(r, "Alt ID", -1)),
+                              int(_get(r, "Alt ID Source", -1)),
+                              r["Star/Gal ID"] == "1", r["Var. ID"] == "1")
 
     # Get the MAST reference.
     rt = kplr.models.Reference
@@ -118,13 +123,13 @@ def kic():
         # Save the measurement.
         try:
             kic_obj.measurements.append(
-                        kplr.models.Measurement(ref, t, u, float(r[k]),
-                                                uncertainty=e)
+                        kplr.models.KICMeasurement(ref, t, u, float(r[k]),
+                                                   uncertainty=e)
                     )
         except ValueError:
             pass
 
-    print(kic_obj)
+    print(kic_obj.measurements)
 
     session.add(kic_obj)
     session.commit()
