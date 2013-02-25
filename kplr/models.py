@@ -116,16 +116,16 @@ class Reference(Base):
     id = Column(Integer, primary_key=True)
     name = Column(String, unique=True)
     url = Column(String)
+    doi = Column(String, unique=True)
     arxiv_id = Column(String, unique=True)
-    ref = Column(String)
 
-    def __init__(self, name, url=None, arxiv_id=None, ref=None):
+    def __init__(self, name, url=None, doi=None, arxiv_id=None):
         self.name = name
         self.url = url
+        self.doi = doi
         self.arxiv_id = arxiv_id
-        self.ref = ref
 
     def __repr__(self):
         return ("<Reference('{0.name}', url='{0.url}', "
-                "arxiv_id='{0.arxiv_id}', ref='{0.ref}')>"
+                "arxiv_id='{0.arxiv_id}', doi='{0.doi}')>"
                ).format(self)

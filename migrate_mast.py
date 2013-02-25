@@ -7,7 +7,6 @@ from __future__ import (division, print_function, absolute_import,
 
 import kplr
 import requests
-from astropy.coordinates import ICRSCoordinates
 
 
 base_url = "http://archive.stsci.edu/kepler/{0}/search.php"
@@ -27,6 +26,7 @@ def mast_request(category, **params):
     params["action"] = params.get("action", "Search")
     params["outputformat"] = "JSON"
     params["verb"] = 3
+    params["coordformat"] = "dec"
     r = requests.get(base_url.format(category), params=params)
     if r.status_code != requests.codes.ok:
         r.raise_for_status()
@@ -68,32 +68,29 @@ def _get(r, k, d):
 
 
 def kic():
-    r = mast_request("kic10", max_records=1)
-    assert len(r) > 0
-    r = r[0]
-
     # Database connection.
     session = kplr.Session()
+    i = 0
+    while 1:
+        i += 1
+        r = mast_request("kic10", kic_kepler_id=i, max_records=1)[0]
+        print(r["Kepler ID"])
+        # Build the KIC object.
+        kic_obj = kplr.models.KIC(int(r["Kepler ID"]),
+                            float(r["RA (J2000)"]), float(r["Dec (J2000)"]),
+                            int(_get(r, "2MASS Designation", -1)),
+                            r.get("2MASS ID", None),
+                            int(_get(r, "Alt ID", -1)),
+                            int(_get(r, "Alt ID Source", -1)),
+                            r["Star/Gal ID"] == "1", r["Var. ID"] == "1")
 
-    # Build the KIC object.
-    ra = "{0}h{1}m{2}s".format(*(r["RA (J2000)"].split()))
-    dec = "{0}d{1}m{2}s".format(*(r["Dec (J2000)"].split()))
-    pos = ICRSCoordinates((" ".join([ra, dec])).encode("utf-8"))
-    kic_obj = kplr.models.KIC(int(r["Kepler ID"]),
-                              pos.ra.degrees, pos.dec.degrees,
-                              int(_get(r, "2MASS Designation", -1)),
-                              r.get("2MASS ID", None),
-                              int(_get(r, "Alt ID", -1)),
-                              int(_get(r, "Alt ID Source", -1)),
-                              r["Star/Gal ID"] == "1", r["Var. ID"] == "1")
+        # Get the MAST reference.
+        rt = kplr.models.Reference
+        ref = session.query(rt).filter(rt.name == "MAST").all()
+        ref = rt("MAST") if len(ref) == 0 else ref[0]
 
-    # Get the MAST reference.
-    rt = kplr.models.Reference
-    ref = session.query(rt).filter(rt.name == "MAST").all()
-    ref = rt("MAST") if len(ref) == 0 else ref[0]
-
-    # Parse the measurements.
-    for n, u, k, e in [
+        # Parse the measurements.
+        for n, u, k, e in [
                         ("pm_ra", "arcsec/yr", "RA PM (arcsec/yr)", None),
                         ("pm_dec", "arcsec/yr", "Dec PM (arcsec/yr)", None),
                         ("umag", "mag", "u Mag", None),
@@ -114,25 +111,22 @@ def kic():
                         ("stellar_radius", "R_sun", "Radius (solar=1.0)",
                                                                         None),
                         ("parallax", "arcsec", "Parallax (arcsec)", None),
-                      ]:
+                        ]:
 
-        # Upsert the measurement type reference.
-        t = session.query(kplr.models.MeasurementType).filter(
-                            kplr.models.MeasurementType.name == n).all()[0]
+            t = session.query(kplr.models.MeasurementType).filter(
+                                kplr.models.MeasurementType.name == n).all()[0]
 
-        # Save the measurement.
-        try:
-            kic_obj.measurements.append(
-                        kplr.models.KICMeasurement(ref, t, u, float(r[k]),
-                                                   uncertainty=e)
-                    )
-        except ValueError:
-            pass
+            # Save the measurement.
+            try:
+                kic_obj.measurements.append(
+                            kplr.models.KICMeasurement(ref, t, u, float(r[k]),
+                                                    uncertainty=e)
+                        )
+            except ValueError:
+                pass
 
-    print(kic_obj.measurements)
-
-    session.add(kic_obj)
-    session.commit()
+        session.add(kic_obj)
+        session.commit()
 
 
 if __name__ == "__main__":
