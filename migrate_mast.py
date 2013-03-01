@@ -5,36 +5,8 @@ from __future__ import (division, print_function, absolute_import,
                         unicode_literals)
 
 
+import os
 import kplr
-import requests
-
-
-base_url = "http://archive.stsci.edu/kepler/{0}/search.php"
-
-
-def mast_request(category, **params):
-    """
-    Submit a request to the API and return the JSON response.
-
-    :param category:
-        The table that you want to search.
-
-    :param **kwargs:
-        Any other search parameters.
-
-    """
-    params["action"] = params.get("action", "Search")
-    params["outputformat"] = "JSON"
-    params["verb"] = 3
-    params["coordformat"] = "dec"
-    r = requests.get(base_url.format(category), params=params)
-    if r.status_code != requests.codes.ok:
-        r.raise_for_status()
-
-    try:
-        return r.json()
-    except ValueError:
-        return None
 
 
 _mt = kplr.models.MeasurementType
@@ -71,6 +43,13 @@ def kic():
     # Database connection.
     session = kplr.Session()
     i = 0
+
+    # Get the MAST reference.
+    rt = kplr.models.Reference
+    ref = session.query(rt).filter(rt.name == "MAST").all()
+    ref = rt("MAST", doi="10.1088/0004-6256/142/4/112") if len(ref) == 0 \
+                                                        else ref[0]
+
     while 1:
         i += 1
         r = mast_request("kic10", kic_kepler_id=i, max_records=1)[0]
@@ -83,11 +62,6 @@ def kic():
                             int(_get(r, "Alt ID", -1)),
                             int(_get(r, "Alt ID Source", -1)),
                             r["Star/Gal ID"] == "1", r["Var. ID"] == "1")
-
-        # Get the MAST reference.
-        rt = kplr.models.Reference
-        ref = session.query(rt).filter(rt.name == "MAST").all()
-        ref = rt("MAST") if len(ref) == 0 else ref[0]
 
         # Parse the measurements.
         for n, u, k, e in [
@@ -132,6 +106,8 @@ def kic():
 if __name__ == "__main__":
     kplr.drop_all()
     kplr.create_all()
+
+    if not os.path.
 
     session = kplr.Session()
     session.add_all(kic_mts)
