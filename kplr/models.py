@@ -37,19 +37,21 @@ class KIC(Base):
     # Star/Galaxy, etc.
     galaxy = Column(Boolean)
     variable = Column(Boolean)
+    fov_flag = Column(Integer)
 
     def __init__(self, kepler_id, ra, dec, twomass_id, twomass_name,
-                 alt_id, alt_ref, galaxy, variable):
+                 alt_id, alt_ref, galaxy, variable, fov_flag):
         self.kepler_id = kepler_id
         self.ra, self.dec = ra, dec
         self.twomass_id, self.twomass_name = twomass_id, twomass_name
         self.alt_id, self.alt_ref = alt_id, alt_ref
         self.galaxy, self.variable = galaxy, variable
+        self.fov_flag = fov_flag
 
     def __repr__(self):
         return ("<KIC({0.kepler_id}, {0.ra}, {0.dec}, {0.twomass_id}, "
                 "'{0.twomass_name}', {0.alt_id}, {0.alt_ref}, "
-                "{0.galaxy}, {0.variable})>").format(self)
+                "{0.galaxy}, {0.variable}, {0.fov_flag})>").format(self)
 
 
 class KICMeasurement(Base):

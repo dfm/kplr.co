@@ -39,10 +39,9 @@ def _get(r, k, d):
     return v if r.get(k, "") != "" else d
 
 
-def kic():
+def kic(kic_fn=None):
     # Database connection.
     session = kplr.Session()
-    i = 0
 
     # Get the MAST reference.
     rt = kplr.models.Reference
@@ -50,64 +49,82 @@ def kic():
     ref = rt("MAST", doi="10.1088/0004-6256/142/4/112") if len(ref) == 0 \
                                                         else ref[0]
 
-    while 1:
-        i += 1
-        r = mast_request("kic10", kic_kepler_id=i, max_records=1)[0]
-        print(r["Kepler ID"])
-        # Build the KIC object.
-        kic_obj = kplr.models.KIC(int(r["Kepler ID"]),
-                            float(r["RA (J2000)"]), float(r["Dec (J2000)"]),
-                            int(_get(r, "2MASS Designation", -1)),
-                            r.get("2MASS ID", None),
-                            int(_get(r, "Alt ID", -1)),
-                            int(_get(r, "Alt ID Source", -1)),
-                            r["Star/Gal ID"] == "1", r["Var. ID"] == "1")
+    # Build the measurement type list.
+    mts = {}
+    for m in kic_mts:
+        mts[m.name] = session.query(kplr.models.MeasurementType).filter(
+                        kplr.models.MeasurementType.name == m.name).all()[0]
 
-        # Parse the measurements.
-        for n, u, k, e in [
-                        ("pm_ra", "arcsec/yr", "RA PM (arcsec/yr)", None),
-                        ("pm_dec", "arcsec/yr", "Dec PM (arcsec/yr)", None),
-                        ("umag", "mag", "u Mag", None),
-                        ("gmag", "mag", "g Mag", None),
-                        ("rmag", "mag", "r Mag", None),
-                        ("imag", "mag", "i Mag", None),
-                        ("zmag", "mag", "z Mag", None),
-                        ("gredmag", "mag", "Gred Mag", None),
-                        ("d51mag", "mag", "D51 Mag", None),
-                        ("jmag", "mag", "J Mag", None),
-                        ("hmag", "mag", "H Mag", None),
-                        ("kmag", "mag", "K Mag", None),
-                        ("teff", "K", "Teff (deg K)", 200),
-                        ("logg", None, "Log G (cm/s/s)", 0.5),
-                        ("feh", None, "Metallicity (solar=0.0)", 0.5),
-                        ("ebv", "mag", "E(B-V)", 0.1),
-                        ("av", "mag", "A_V", None),
-                        ("stellar_radius", "R_sun", "Radius (solar=1.0)",
-                                                                        None),
-                        ("parallax", "arcsec", "Parallax (arcsec)", None),
+    # Loop over the raw text KIC table.
+    if kic_fn is None:
+        kic_fn = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                              "raw", "kic.txt")
+
+    with open(kic_fn) as f:
+        for i, line in enumerate(f):
+            if i == 0:
+                # Get the field names from the first line.
+                fields = [f.strip() for f in line.split("|")]
+                continue
+
+            # Parse the fields.
+            kic = dict(zip(fields, line.split("|")))
+            if i % 20 == 0:
+                print(i, kic["kic_kepler_id"])
+
+            # Parse the base object parameters.
+            kic_obj = kplr.models.KIC(int(kic["kic_kepler_id"]),
+                                      float(kic["kic_degree_ra"]),
+                                      float(kic["kic_dec"]),
+                                      int(_get(kic, "kic_tmid", -1)),
+                                      kic.get("kic_tm_designation", None),
+                                      int(_get(kic, "kic_altid", -1)),
+                                      int(_get(kic, "kic_altsource", -1)),
+                                      kic["kic_galaxy"] == "1",
+                                      kic["kic_variable"] == "1",
+                                      int(kic["kic_fov_flag"]))
+
+            # Parse the measurements.
+            for n, u, k, e in [
+                            ("pm_ra", "arcsec/yr", "kic_pmra", None),
+                            ("pm_dec", "arcsec/yr", "kic_pmdec", None),
+                            ("umag", "mag", "kic_umag", None),
+                            ("gmag", "mag", "kic_gmag", None),
+                            ("rmag", "mag", "kic_rmag", None),
+                            ("imag", "mag", "kic_imag", None),
+                            ("zmag", "mag", "kic_zmag", None),
+                            ("gredmag", "mag", "kic_gredmag", None),
+                            ("d51mag", "mag", "kic_d51mag", None),
+                            ("jmag", "mag", "kic_jmag", None),
+                            ("hmag", "mag", "kic_hmag", None),
+                            ("kmag", "mag", "kic_kmag", None),
+                            ("teff", "K", "kic_teff", 200),
+                            ("logg", None, "kic_logg", 0.5),
+                            ("feh", None, "kic_feh", 0.5),
+                            ("ebv", "mag", "kic_ebminusv", 0.1),
+                            ("av", "mag", "kic_av", None),
+                            ("stellar_radius", "R_sun", "kic_radius", None),
+                            ("parallax", "arcsec", "kic_parallax", None),
                         ]:
+                try:
+                    measurement = kplr.models.KICMeasurement(ref, mts[n], u,
+                                                             float(kic[k]),
+                                                             uncertainty=e)
 
-            t = session.query(kplr.models.MeasurementType).filter(
-                                kplr.models.MeasurementType.name == n).all()[0]
+                except ValueError:
+                    pass
 
-            # Save the measurement.
-            try:
-                kic_obj.measurements.append(
-                            kplr.models.KICMeasurement(ref, t, u, float(r[k]),
-                                                    uncertainty=e)
-                        )
-            except ValueError:
-                pass
+                else:
+                    kic_obj.measurements.append(measurement)
 
-        session.add(kic_obj)
-        session.commit()
+            # Save this object.
+            session.add(kic_obj)
+            session.commit()
 
 
 if __name__ == "__main__":
     kplr.drop_all()
     kplr.create_all()
-
-    if not os.path.
 
     session = kplr.Session()
     session.add_all(kic_mts)
