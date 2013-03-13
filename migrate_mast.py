@@ -80,8 +80,8 @@ def kic(kic_fn=None):
                                       kic.get("kic_tm_designation", None),
                                       int(_get(kic, "kic_altid", -1)),
                                       int(_get(kic, "kic_altsource", -1)),
-                                      kic["kic_galaxy"] == "1",
-                                      kic["kic_variable"] == "1",
+                                      kic["kic_galaxy"] != "0",
+                                      kic["kic_variable"] != "0",
                                       int(kic["kic_fov_flag"]))
 
             # Parse the measurements.

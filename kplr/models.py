@@ -16,6 +16,52 @@ Base = declarative_base()
 
 
 class KIC(Base):
+    """
+    The entry for a star from the Kepler Input Catalog (KIC). The measured
+    values from the input catalog are stored with the reference "MAST" in the
+    ``measurements`` relationship.
+
+    :param kepler_id: (Integer)
+        The ID of the star in the KIC.
+
+    :param ra: (Float)
+        The R.A. of the star in degrees.
+
+    :param dec: (Float)
+        The Dec. of the star in degrees.
+
+    :param twomass_id: (Integer)
+        The ID from the 2MASS catalog or ``None``.
+
+    :param twomass_name: (String)
+        The name of the star from the KIC.
+
+    :param alt_id: (Integer)
+        The ID of the star from another catalog (referenced by the
+        ``alt_ref`` property.
+
+    :param alt_ref: (Integer)
+        The reference catalog for the alternate ID.
+            - 0: null
+            - 1: Hipparcos catalog
+            - 2: Tycho2
+            - 3: UCAC2
+            - 4: General Catalog of Var. Stars
+            - 5: Lepine proper motion catalog star
+            - 11: NED
+            - 12: Extended 2MASS
+            - 13: FIRST
+            - 14: NVSS catalog
+            - 15: VLBA catalog
+            - 16: CHANDRA catalog
+
+    :param galaxy: (Boolean)
+        Is this actually a galaxy?
+
+    :param variable: (Boolean)
+        Is the source variable?
+
+    """
 
     __tablename__ = "kic"
 
@@ -41,12 +87,13 @@ class KIC(Base):
 
     def __init__(self, kepler_id, ra, dec, twomass_id, twomass_name,
                  alt_id, alt_ref, galaxy, variable, fov_flag):
-        self.kepler_id = kepler_id
-        self.ra, self.dec = ra, dec
-        self.twomass_id, self.twomass_name = twomass_id, twomass_name
-        self.alt_id, self.alt_ref = alt_id, alt_ref
-        self.galaxy, self.variable = galaxy, variable
-        self.fov_flag = fov_flag
+        self.kepler_id = int(kepler_id)
+        self.ra, self.dec = float(ra), float(dec)
+        self.twomass_id, self.twomass_name = \
+                                    int(twomass_id), unicode(twomass_name)
+        self.alt_id, self.alt_ref = int(alt_id), int(alt_ref)
+        self.galaxy, self.variable = bool(galaxy), bool(variable)
+        self.fov_flag = int(fov_flag)
 
     def __repr__(self):
         return ("<KIC({0.kepler_id}, {0.ra}, {0.dec}, {0.twomass_id}, "
